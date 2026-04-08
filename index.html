@@ -3,70 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crypto Auto-Tracker | BTC & USDT</title>
+    <title>Crypto Space Dodger</title>
     <style>
-        body { font-family: 'Inter', sans-serif; background: #0b0e11; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { background: #1e2329; padding: 2rem; border-radius: 16px; width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; }
-        .price-card { margin: 20px 0; padding: 15px; background: #2b3139; border-radius: 10px; border-left: 4px solid #f0b90b; position: relative; }
-        .label { font-size: 0.8rem; color: #929aa5; text-transform: uppercase; margin-bottom: 5px; display: block; }
-        .value { font-size: 1.6rem; font-weight: bold; color: #f3ba2f; }
-        .status { font-size: 0.7rem; color: #707a8a; margin-top: 15px; }
-        /* Simple Progress Bar for Auto-Refresh */
-        .progress-container { width: 100%; background: #2b3139; height: 4px; border-radius: 2px; margin-top: 10px; overflow: hidden; }
-        .progress-bar { width: 0%; height: 100%; background: #f0b90b; transition: width 1s linear; }
+        body { margin: 0; background: #0b0e11; color: white; font-family: 'Courier New', Courier, monospace; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+        canvas { border: 2px solid #f0b90b; background: #161a1e; cursor: none; box-shadow: 0 0 20px rgba(240, 185, 11, 0.2); }
+        .ui { position: absolute; top: 20px; text-align: center; pointer-events: none; }
+        h1 { margin: 0; color: #f0b90b; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 2px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2 style="margin-top:0">Live Market Watch</h2>
-        
-        <div class="price-card">
-            <span class="label">Bitcoin Price (USDT)</span>
-            <div class="value" id="btc-price">Loading...</div>
-        </div>
-
-        <div class="price-card" style="border-left-color: #26a17b;">
-            <span class="label">Tether Price (IDR)</span>
-            <div class="value" id="usdt-price">Loading...</div>
-        </div>
-
-        <div class="progress-container">
-            <div id="progress" class="progress-bar"></div>
-        </div>
-        <div class="status" id="timestamp">Connecting to market...</div>
+    <div class="ui">
+        <h1>Crypto Space Dodger</h1>
+        <p>Use Mouse to Move • Score: <span id="score">0</span></p>
     </div>
+    <canvas id="gameCanvas"></canvas>
 
     <script>
-        let timeLeft = 30; // Seconds between updates
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
 
-        async function updatePrices() {
-            try {
-                const res = await fetch('/api/prices');
-                const data = await res.json();
-                
-                document.getElementById('btc-price').innerText = data.btc_usdt;
-                document.getElementById('usdt-price').innerText = data.usdt_idr;
-                document.getElementById('timestamp').innerText = `Last Auto-Update: ${data.updatedAt}`;
-                
-                timeLeft = 30; // Reset timer
-            } catch (err) {
-                document.getElementById('timestamp').innerText = "Update failed. Retrying...";
-            }
+        canvas.width = 600;
+        canvas.height = 400;
+
+        let score = 0;
+        let gameActive = true;
+        const player = { x: 300, y: 350, w: 40, h: 10, color: '#f0b90b' };
+        const items = [];
+
+        function createItem() {
+            const isCoin = Math.random() > 0.3;
+            items.push({
+                x: Math.random() * (canvas.width - 20),
+                y: -20,
+                type: isCoin ? 'coin' : 'enemy',
+                speed: 2 + Math.random() * 3,
+                size: isCoin ? 10 : 15
+            });
         }
 
-        // Timer function to update progress bar every second
-        setInterval(() => {
-            timeLeft--;
-            const percent = ((30 - timeLeft) / 30) * 100;
-            document.getElementById('progress').style.width = percent + "%";
-            
-            if (timeLeft <= 0) {
-                updatePrices();
-            }
-        }, 1000);
+        function update() {
+            if (!gameActive) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Initial fetch
-        updatePrices();
+            // Draw Player
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x - player.w/2, player.y, player.w, player.h);
+
+            // Update Items
+            for (let i = items.length - 1; i >= 0; i--) {
+                const item = items[i];
+                item.y += item.speed;
+
+                // Draw Items
+                ctx.fillStyle = item.type === 'coin' ? '#f0b90b' : '#ff4d4d';
+                if (item.type === 'coin') {
+                    ctx.beginPath();
+                    ctx.arc(item.x, item.y, item.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = 'black';
+                    ctx.fillText('₿', item.x - 4, item.y + 4);
+                } else {
+                    ctx.fillRect(item.x - item.size/2, item.y, 5, item.size * 2); // Candle shape
+                }
+
+                // Collision
+                if (item.y > player.y && item.y < player.y + player.h &&
+                    item.x > player.x - player.w/2 && item.x < player.x + player.w/2) {
+                    if (item.type === 'coin') {
+                        score += 10;
+                        scoreEl.innerText = score;
+                        items.splice(i, 1);
+                    } else {
+                        gameActive = false;
+                        alert('Liquidated! Final Score: ' + score);
+                        location.reload();
+                    }
+                }
+
+                if (item.y > canvas.height) items.splice(i, 1);
+            }
+
+            if (Math.random() < 0.05) createItem();
+            requestAnimationFrame(update);
+        }
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            player.x = e.clientX - rect.left;
+        });
+
+        update();
     </script>
 </body>
 </html>
