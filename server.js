@@ -7,34 +7,23 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Mapping Binance symbols to friendly names
-const cryptoMap = {
-    'BTCUSDT': 'Bitcoin',
-    'ETHUSDT': 'Ethereum',
-    'USDTUSDC': 'Tether (Stable)',
-    'BNBUSDT': 'Binance Coin',
-    'XRPUSDT': 'Ripple'
-};
-
-app.get('/api/market', async (req, res) => {
+app.get('/api/prices', async (req, res) => {
     try {
-        const symbols = Object.keys(cryptoMap);
-        // Binance batch price endpoint
-        const response = await axios.get(`https://api.binance.com/api/v3/ticker/price?symbols=["${symbols.join('","')}"]`);
+        // 1. Get BTC in USDT from Binance
+        const btcRes = await axios.get('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
         
-        const data = response.data.map(item => ({
-            name: cryptoMap[item.symbol],
-            symbol: item.symbol.replace('USDT', '').replace('USDC', ''),
-            price: parseFloat(item.price).toLocaleString('en-US', { 
-                style: 'currency', 
-                currency: 'USD',
-                minimumFractionDigits: item.symbol.includes('USDTUSDC') ? 4 : 2 
-            }),
-        }));
+        // 2. Get USDT to IDR (Using a stable exchange rate API)
+        // Note: In production, you might use a specific IDR exchange API
+        const idrRes = await axios.get('https://api.exchangerate-api.com/v4/latest/USD');
+        const usdtToIdr = idrRes.data.rates.IDR;
 
-        res.json({ assets: data, updatedAt: new Date().toLocaleTimeString() });
+        res.json({
+            btc_usdt: parseFloat(btcRes.data.price).toLocaleString('en-US', { style: 'currency', currency: 'USD' }),
+            usdt_idr: new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(usdtToIdr),
+            updatedAt: new Date().toLocaleString('id-ID')
+        });
     } catch (error) {
-        res.status(500).json({ error: "API limit reached or service down" });
+        res.status(500).json({ error: "Failed to fetch market data" });
     }
 });
 
@@ -42,4 +31,4 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, () => console.log(`Dashboard active on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
