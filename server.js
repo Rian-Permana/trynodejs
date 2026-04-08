@@ -5,29 +5,41 @@ const app = express();
 
 const PORT = process.env.PORT || 3000;
 
-// Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// API Route: Get Real-time Bitcoin Price
-app.get('/api/bitcoin', async (req, res) => {
+// Mapping Binance symbols to friendly names
+const cryptoMap = {
+    'BTCUSDT': 'Bitcoin',
+    'ETHUSDT': 'Ethereum',
+    'USDTUSDC': 'Tether (Stable)',
+    'BNBUSDT': 'Binance Coin',
+    'XRPUSDT': 'Ripple'
+};
+
+app.get('/api/market', async (req, res) => {
     try {
-        // Fetching from Binance Public API (No Key Required)
-        const response = await axios.get('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
-        res.json({
-            symbol: "Bitcoin (BTC)",
-            price: parseFloat(response.data.price).toLocaleString('en-US', { style: 'currency', currency: 'USD' }),
-            updatedAt: new Date().toLocaleTimeString()
-        });
+        const symbols = Object.keys(cryptoMap);
+        // Binance batch price endpoint
+        const response = await axios.get(`https://api.binance.com/api/v3/ticker/price?symbols=["${symbols.join('","')}"]`);
+        
+        const data = response.data.map(item => ({
+            name: cryptoMap[item.symbol],
+            symbol: item.symbol.replace('USDT', '').replace('USDC', ''),
+            price: parseFloat(item.price).toLocaleString('en-US', { 
+                style: 'currency', 
+                currency: 'USD',
+                minimumFractionDigits: item.symbol.includes('USDTUSDC') ? 4 : 2 
+            }),
+        }));
+
+        res.json({ assets: data, updatedAt: new Date().toLocaleTimeString() });
     } catch (error) {
-        res.status(500).json({ error: "Failed to fetch price" });
+        res.status(500).json({ error: "API limit reached or service down" });
     }
 });
 
-// Root Route: Explicitly serve index.html to prevent "Nothing Found"
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Dashboard active on port ${PORT}`));
