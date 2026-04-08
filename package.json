@@ -1,0 +1,12 @@
+{
+  "name": "hostinger-node-app",
+  "version": "1.0.0",
+  "description": "Unique Node.js site for Hostinger Shared Hosting",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
