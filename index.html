@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Node.js App | Hostinger</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
+        h1 { color: #673ab7; }
+        .status-box { background: #e8f5e9; color: #2e7d32; padding: 10px; border-radius: 5px; margin-top: 15px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🚀 Node.js is Live!</h1>
+        <p>This website is running on Hostinger Shared Hosting.</p>
+        <div id="status" class="status-box">Checking server status...</div>
+    </div>
+
+    <script>
+        // Test the Node.js Backend
+        fetch('/api/status')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('status').innerText = data.message;
+            });
+    </script>
+</body>
+</html>
