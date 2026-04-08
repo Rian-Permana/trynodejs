@@ -3,60 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crypto Market Cap Top 5</title>
+    <title>Crypto Focus | BTC & USDT</title>
     <style>
-        body { font-family: 'Inter', sans-serif; background: #0b0e11; color: #eaecef; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; }
-        header { text-align: center; margin-bottom: 40px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
-        .card { background: #1e2329; padding: 20px; border-radius: 12px; border: 1px solid #30363d; transition: transform 0.2s; }
-        .card:hover { transform: translateY(-5px); border-color: #f0b90b; }
-        .card h3 { margin: 0; color: #929aa5; font-size: 0.9rem; }
-        .card .name { font-size: 1.2rem; font-weight: bold; margin: 5px 0; color: #fff; }
-        .card .price { font-size: 1.8rem; font-weight: bold; color: #f0b90b; margin-top: 10px; }
-        .footer { text-align: center; margin-top: 40px; color: #707a8a; font-size: 0.8rem; }
-        .refresh-btn { background: #f0b90b; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: #0b0e11; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: #1e2329; padding: 2rem; border-radius: 16px; width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; }
+        .price-card { margin: 20px 0; padding: 15px; background: #2b3139; border-radius: 10px; border-left: 4px solid #f0b90b; }
+        .label { font-size: 0.8rem; color: #929aa5; text-transform: uppercase; margin-bottom: 5px; display: block; }
+        .value { font-size: 1.6rem; font-weight: bold; color: #f3ba2f; }
+        .btn { background: #f0b90b; color: black; border: none; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 10px; }
+        .btn:hover { background: #d8a608; }
+        .btn:disabled { background: #474d57; cursor: not-allowed; }
+        .status { font-size: 0.7rem; color: #707a8a; margin-top: 15px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>Crypto Live Dashboard</h1>
-            <p>Top 5 Market Cap Assets + Stablecoin</p>
-            <button class="refresh-btn" onclick="fetchData()">Manual Refresh</button>
-        </header>
+        <h2 style="margin-top:0">Market Watch</h2>
+        
+        <div class="price-card">
+            <span class="label">Bitcoin Price (USDT)</span>
+            <div class="value" id="btc-price">---</div>
+        </div>
 
-        <div class="grid" id="market-grid">
-            </div>
+        <div class="price-card" style="border-left-color: #26a17b;">
+            <span class="label">Tether Price (IDR)</span>
+            <div class="value" id="usdt-price">---</div>
+        </div>
 
-        <div class="footer" id="status">Loading market data...</div>
+        <button class="btn" id="refresh-btn" onclick="updatePrices()">Refresh Prices</button>
+        <div class="status" id="timestamp">Click refresh to load data</div>
     </div>
 
     <script>
-        async function fetchData() {
-            const grid = document.getElementById('market-grid');
-            const status = document.getElementById('status');
-            
+        async function updatePrices() {
+            const btn = document.getElementById('refresh-btn');
+            const btcEl = document.getElementById('btc-price');
+            const usdtEl = document.getElementById('usdt-price');
+            const timeEl = document.getElementById('timestamp');
+
+            btn.disabled = true;
+            btn.innerText = "Loading...";
+
             try {
-                const res = await fetch('/api/market');
+                const res = await fetch('/api/prices');
                 const data = await res.json();
                 
-                grid.innerHTML = data.assets.map(asset => `
-                    <div class="card">
-                        <h3>${asset.symbol}</h3>
-                        <div class="name">${asset.name}</div>
-                        <div class="price">${asset.price}</div>
-                    </div>
-                `).join('');
-                
-                status.innerText = `Last updated: ${data.updatedAt} (Auto-updates every 60s)`;
-            } catch (e) {
-                status.innerText = "Error connecting to server.";
+                btcEl.innerText = data.btc_usdt;
+                usdtEl.innerText = data.usdt_idr;
+                timeEl.innerText = `Last update: ${data.updatedAt}`;
+            } catch (err) {
+                timeEl.innerText = "Error: Could not connect to API";
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Refresh Prices";
             }
         }
 
-        fetchData();
-        setInterval(fetchData, 60000); // Auto-refresh every minute
+        // Initial load
+        updatePrices();
     </script>
 </body>
 </html>
