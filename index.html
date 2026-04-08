@@ -3,63 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crypto Focus | BTC & USDT</title>
+    <title>Crypto Auto-Tracker | BTC & USDT</title>
     <style>
-        body { font-family: 'Inter', -apple-system, sans-serif; background: #0b0e11; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        body { font-family: 'Inter', sans-serif; background: #0b0e11; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .container { background: #1e2329; padding: 2rem; border-radius: 16px; width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; }
-        .price-card { margin: 20px 0; padding: 15px; background: #2b3139; border-radius: 10px; border-left: 4px solid #f0b90b; }
+        .price-card { margin: 20px 0; padding: 15px; background: #2b3139; border-radius: 10px; border-left: 4px solid #f0b90b; position: relative; }
         .label { font-size: 0.8rem; color: #929aa5; text-transform: uppercase; margin-bottom: 5px; display: block; }
         .value { font-size: 1.6rem; font-weight: bold; color: #f3ba2f; }
-        .btn { background: #f0b90b; color: black; border: none; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 10px; }
-        .btn:hover { background: #d8a608; }
-        .btn:disabled { background: #474d57; cursor: not-allowed; }
         .status { font-size: 0.7rem; color: #707a8a; margin-top: 15px; }
+        /* Simple Progress Bar for Auto-Refresh */
+        .progress-container { width: 100%; background: #2b3139; height: 4px; border-radius: 2px; margin-top: 10px; overflow: hidden; }
+        .progress-bar { width: 0%; height: 100%; background: #f0b90b; transition: width 1s linear; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2 style="margin-top:0">Market Watch</h2>
+        <h2 style="margin-top:0">Live Market Watch</h2>
         
         <div class="price-card">
             <span class="label">Bitcoin Price (USDT)</span>
-            <div class="value" id="btc-price">---</div>
+            <div class="value" id="btc-price">Loading...</div>
         </div>
 
         <div class="price-card" style="border-left-color: #26a17b;">
             <span class="label">Tether Price (IDR)</span>
-            <div class="value" id="usdt-price">---</div>
+            <div class="value" id="usdt-price">Loading...</div>
         </div>
 
-        <button class="btn" id="refresh-btn" onclick="updatePrices()">Refresh Prices</button>
-        <div class="status" id="timestamp">Click refresh to load data</div>
+        <div class="progress-container">
+            <div id="progress" class="progress-bar"></div>
+        </div>
+        <div class="status" id="timestamp">Connecting to market...</div>
     </div>
 
     <script>
+        let timeLeft = 30; // Seconds between updates
+
         async function updatePrices() {
-            const btn = document.getElementById('refresh-btn');
-            const btcEl = document.getElementById('btc-price');
-            const usdtEl = document.getElementById('usdt-price');
-            const timeEl = document.getElementById('timestamp');
-
-            btn.disabled = true;
-            btn.innerText = "Loading...";
-
             try {
                 const res = await fetch('/api/prices');
                 const data = await res.json();
                 
-                btcEl.innerText = data.btc_usdt;
-                usdtEl.innerText = data.usdt_idr;
-                timeEl.innerText = `Last update: ${data.updatedAt}`;
+                document.getElementById('btc-price').innerText = data.btc_usdt;
+                document.getElementById('usdt-price').innerText = data.usdt_idr;
+                document.getElementById('timestamp').innerText = `Last Auto-Update: ${data.updatedAt}`;
+                
+                timeLeft = 30; // Reset timer
             } catch (err) {
-                timeEl.innerText = "Error: Could not connect to API";
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "Refresh Prices";
+                document.getElementById('timestamp').innerText = "Update failed. Retrying...";
             }
         }
 
-        // Initial load
+        // Timer function to update progress bar every second
+        setInterval(() => {
+            timeLeft--;
+            const percent = ((30 - timeLeft) / 30) * 100;
+            document.getElementById('progress').style.width = percent + "%";
+            
+            if (timeLeft <= 0) {
+                updatePrices();
+            }
+        }, 1000);
+
+        // Initial fetch
         updatePrices();
     </script>
 </body>
