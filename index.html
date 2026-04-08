@@ -3,47 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Bitcoin Tracker</title>
+    <title>Crypto Market Cap Top 5</title>
     <style>
-        body { font-family: 'Inter', sans-serif; background: #0f172a; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { background: #1e293b; padding: 2.5rem; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center; max-width: 400px; width: 90%; }
-        h1 { font-size: 1.5rem; color: #f59e0b; margin-bottom: 0.5rem; }
-        .price { font-size: 3rem; font-weight: bold; margin: 1rem 0; color: #fff; }
-        .label { color: #94a3b8; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
-        .status { margin-top: 1.5rem; font-size: 0.8rem; color: #64748b; }
-        .btn { background: #f59e0b; color: #000; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 1rem; transition: 0.3s; }
-        .btn:hover { background: #d97706; }
+        body { font-family: 'Inter', sans-serif; background: #0b0e11; color: #eaecef; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 40px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .card { background: #1e2329; padding: 20px; border-radius: 12px; border: 1px solid #30363d; transition: transform 0.2s; }
+        .card:hover { transform: translateY(-5px); border-color: #f0b90b; }
+        .card h3 { margin: 0; color: #929aa5; font-size: 0.9rem; }
+        .card .name { font-size: 1.2rem; font-weight: bold; margin: 5px 0; color: #fff; }
+        .card .price { font-size: 1.8rem; font-weight: bold; color: #f0b90b; margin-top: 10px; }
+        .footer { text-align: center; margin-top: 40px; color: #707a8a; font-size: 0.8rem; }
+        .refresh-btn { background: #f0b90b; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
-        <span class="label">Current Market Price</span>
-        <h1 id="symbol">Bitcoin (BTC)</h1>
-        <div class="price" id="btc-price">$0.00</div>
-        <button class="btn" onclick="updatePrice()">Refresh Now</button>
-        <div class="status" id="last-updated">Updating...</div>
+        <header>
+            <h1>Crypto Live Dashboard</h1>
+            <p>Top 5 Market Cap Assets + Stablecoin</p>
+            <button class="refresh-btn" onclick="fetchData()">Manual Refresh</button>
+        </header>
+
+        <div class="grid" id="market-grid">
+            </div>
+
+        <div class="footer" id="status">Loading market data...</div>
     </div>
 
     <script>
-        async function updatePrice() {
-            const priceEl = document.getElementById('btc-price');
-            const updateEl = document.getElementById('last-updated');
+        async function fetchData() {
+            const grid = document.getElementById('market-grid');
+            const status = document.getElementById('status');
             
-            priceEl.style.opacity = "0.5";
             try {
-                const response = await fetch('/api/bitcoin');
-                const data = await response.json();
-                priceEl.innerText = data.price;
-                updateEl.innerText = `Last updated: ${data.updatedAt}`;
-            } catch (err) {
-                updateEl.innerText = "Error fetching data";
+                const res = await fetch('/api/market');
+                const data = await res.json();
+                
+                grid.innerHTML = data.assets.map(asset => `
+                    <div class="card">
+                        <h3>${asset.symbol}</h3>
+                        <div class="name">${asset.name}</div>
+                        <div class="price">${asset.price}</div>
+                    </div>
+                `).join('');
+                
+                status.innerText = `Last updated: ${data.updatedAt} (Auto-updates every 60s)`;
+            } catch (e) {
+                status.innerText = "Error connecting to server.";
             }
-            priceEl.style.opacity = "1";
         }
 
-        // Auto-update every 30 seconds
-        updatePrice();
-        setInterval(updatePrice, 30000);
+        fetchData();
+        setInterval(fetchData, 60000); // Auto-refresh every minute
     </script>
 </body>
 </html>
